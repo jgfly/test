@@ -1,0 +1,38 @@
+name: Docker Image Downloader
+
+on:
+  workflow_dispatch: # 手动触发运行
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Maximize Build Space
+        run: |
+          # 清理运行器预装的无用工具，腾出约 20GB+ 空间
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo docker image prune -a -f
+
+      - name: Pull and Save Docker Image
+        run: |
+          IMAGE_NAME="swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/vllm/vllm-openai:v0.19.1"
+          FILE_NAME="vllm_v0.19.1.tar"
+          
+          echo "正在拉取镜像..."
+          docker pull $IMAGE_NAME
+          
+          echo "正在保存为 tar 文件..."
+          docker save $IMAGE_NAME -o $FILE_NAME
+          
+          echo "正在压缩文件以减小体积 (使用 gzip)..."
+          gzip $FILE_NAME
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vllm-image-package
+          path: vllm_v0.19.1.tar.gz
+          retention-days: 1 # 下载链接保留1天
