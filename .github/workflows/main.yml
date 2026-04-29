@@ -1,7 +1,7 @@
-name: Docker Image Downloader
+name: Docker Image Downloader (Official Source)
 
 on:
-  workflow_dispatch: # 手动触发运行
+  workflow_dispatch:
 
 jobs:
   build:
@@ -9,30 +9,26 @@ jobs:
     steps:
       - name: Maximize Build Space
         run: |
-          # 清理运行器预装的无用工具，腾出约 20GB+ 空间
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /usr/local/lib/android
-          sudo rm -rf /opt/ghc
-          sudo rm -rf "/usr/local/share/boost"
+          # vLLM 镜像很大，必须清理掉运行器自带的缓存以防溢出
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc "/usr/local/share/boost"
           sudo docker image prune -a -f
 
       - name: Pull and Save Docker Image
         run: |
-          IMAGE_NAME="swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/vllm/vllm-openai:v0.19.1"
+          # 直接使用官方 Docker Hub 地址
+          IMAGE_NAME="docker.io/vllm/vllm-openai:v0.19.1"
           FILE_NAME="vllm_v0.19.1.tar"
           
-          echo "正在拉取镜像..."
+          echo "正在从 Docker Hub 官方源拉取..."
           docker pull $IMAGE_NAME
           
-          echo "正在保存为 tar 文件..."
-          docker save $IMAGE_NAME -o $FILE_NAME
-          
-          echo "正在压缩文件以减小体积 (使用 gzip)..."
-          gzip $FILE_NAME
+          echo "正在保存并压缩 (使用 zstd 压缩速度更快)..."
+          # 使用 zstd 替代 gzip，在处理 10GB+ 镜像时效率更高
+          docker save $IMAGE_NAME | zstd -o ${FILE_NAME}.zst
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: vllm-image-package
-          path: vllm_v0.19.1.tar.gz
-          retention-days: 1 # 下载链接保留1天
+          name: vllm-official-image
+          path: vllm_v0.19.1.tar.zst
+          retention-days: 1
