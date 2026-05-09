@@ -1,4 +1,4 @@
-name: Docker Image Downloader (Official Source 0.20.0)
+name: Docker Image Downloader (Official Source 0.20.1)
 
 on:
   workflow_dispatch:
