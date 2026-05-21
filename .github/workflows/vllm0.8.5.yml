@@ -1,4 +1,4 @@
-name: Docker Image Downloader (Official Source)
+name: Docker Image Downloader (vllm0.8.5)
 
 on:
   workflow_dispatch:
